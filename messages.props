@@ -1,25 +1,31 @@
-USERS_REST_SERVER_MAINCLASS=sd2526.trab.impl.rest.servers.RestUsersServer
-USERS_REST_PORT=3456
-USERS_REST_EXTRA_ARGS=
-
-USERS_GRPC_SERVER_MAINCLASS=sd2526.trab.impl.grpc.servers.GrpcUsersServer
-USERS_GRPC_PORT=13456
-USERS_GRPC_EXTRA_ARGS=
-
-
 MESSAGES_REST_SERVER_MAINCLASS=sd2526.trab.impl.rest.servers.RestMessagesServer
 MESSAGES_REST_PORT=4567
 MESSAGES_REST_EXTRA_ARGS=
 
-MESSAGES_GRPC_SERVER_MAINCLASS=sd2526.trab.impl.grpc.servers.GrpcMessagesServer
-MESSAGES_GRPC_PORT=14567
-MESSAGES_GRPC_EXTRA_ARGS=
-
+USERS_REST_SERVER_MAINCLASS=sd2526.trab.impl.rest.servers.RestUsersServer
+USERS_REST_PORT=3456
+USERS_REST_EXTRA_ARGS=
 
 GATEWAY_REST_SERVER_MAINCLASS=sd2526.trab.impl.rest.servers.RestGatewayServer
 GATEWAY_REST_PORT=6666
 GATEWAY_REST_EXTRA_ARGS=
 
+USERS_GRPC_SERVER_MAINCLASS=sd2526.trab.impl.grpc.servers.GrpcUsersServer
+USERS_GRPC_PORT=13456
+USERS_GRPC_EXTRA_ARGS=
 
 DISCOVERY_MULTICAST_IP=226.226.226.226
 DISCOVERY_MULTICAST_PORT=2266
+
+MESSAGES_REST_PROXY_SERVER_MAINCLASS=
+MESSAGES_REST_PROXY_PORT=
+MESSAGES_REST_PROXY_EXTRA_ARGS=
+MESSAGES_REP_SERVER_MAINCLASS=
+MESSAGES_REP_PORT=
+MESSAGES_REP_EXTRA_ARGS_FIRST=
+MESSAGES_REP_EXTRA_ARGS_OTHER=
+
+USERS_KEYSTORES=users.ourorg0,users-ourorg0-server.ks,password users.ourorg1,users-ourorg1-server.ks,password users.ourorg2,users-ourorg2-server.ks,password
+SERVERS_KEYSTORES=messages0.ourorg0,messages0-ourorg0-server.ks,password messages0.ourorg1,messages0-ourorg1-server.ks,password messages1.ourorg0,messages1-ourorg0-server.ks,password messages1.ourorg1,messages1-ourorg1-server.ks,password messages2.ourorg1,messages2-ourorg1-server.ks,password messages.ourorg2,messages-ourorg2-server.ks,password
+CLIENT_TRUSTSTORE=client-truststore.ks
+CLIENT_TRUSTSTORE_PWD=changeit
