@@ -12,7 +12,7 @@ public class IP {
 			return "?.?.?.?";
 		}
 	}
-	
+
 	public static String hostname() {
 		try {
 			return InetAddress.getLocalHost().getHostName();
@@ -20,10 +20,10 @@ public class IP {
 			return "?.?.?.?";
 		}
 	}
-	
-	public static String domain() {		
+
+	public static String domain() {
 		var h = hostname();
 		int i = h.indexOf('.');
-		return i < 0 ? h : h.substring(i+1);
+		return i < 0 ? h : h.substring(i + 1);
 	}
 }
