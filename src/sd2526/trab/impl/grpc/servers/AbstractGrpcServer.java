@@ -19,7 +19,6 @@ import sd2526.trab.impl.java.servers.AbstractServer;
 import sd2526.trab.impl.utils.IP;
 import io.grpc.netty.shaded.io.grpc.netty.*;
 import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
-import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 
 public abstract class AbstractGrpcServer extends AbstractServer {
 	private static final String SERVER_BASE_URI = "grpc://%s:%s%s";
@@ -49,7 +48,8 @@ public abstract class AbstractGrpcServer extends AbstractServer {
 				builder.addService(s);
 			this.server = builder.build();
 		} catch (Exception e) {
-			e.getStackTrace();
+			e.printStackTrace(); // or log.severe(e.getMessage());
+			throw new RuntimeException("Failed to start gRPC server", e);
 		}
 	}
 

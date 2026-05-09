@@ -45,7 +45,7 @@ public class GrpcClient {
 					SslContextBuilder.forClient().trustManager(trustManagerFactory)).build();
 			// Need to provide the SSl context that contains the certificates with the
 			// public keys of entities that we trust.
-			this.channel = NettyChannelBuilder.forAddress(serverURI.getHost(), serverURI.getPort()).usePlaintext()
+			this.channel = NettyChannelBuilder.forAddress(serverURI.getHost(), serverURI.getPort())
 					.sslContext(context).enableRetry().build();
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to initialize SSL context", e);
