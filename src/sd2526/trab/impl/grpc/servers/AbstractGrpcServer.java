@@ -26,19 +26,16 @@ public abstract class AbstractGrpcServer extends AbstractServer {
 
 	private static final String GRPC_CTX = "/grpc";
 
-	protected final Server server;
+	protected Server server;
 
 	protected AbstractGrpcServer(Logger log, String service, int port) {
 		super(log, service, String.format(SERVER_BASE_URI, IP.hostname(), port, GRPC_CTX));
 
-		try {
-			String keyStoreFilename = System.getProperty("javax.net.ssl.keyStore");
-			String keyStorePassword = System.getProperty("javax.net.ssl.keyStorePassword");
+		String keyStoreFilename = System.getProperty("javax.net.ssl.keyStore");
+		String keyStorePassword = System.getProperty("javax.net.ssl.keyStorePassword");
+		try (FileInputStream input = new FileInputStream(keyStoreFilename)) {
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			try (FileInputStream input = new FileInputStream(keyStoreFilename)) {
-				keyStore.load(input, keyStorePassword.toCharArray());
-			}
-
+			keyStore.load(input, keyStorePassword.toCharArray());
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
 					KeyManagerFactory.getDefaultAlgorithm());
 
@@ -47,15 +44,13 @@ public abstract class AbstractGrpcServer extends AbstractServer {
 			SslContext context = GrpcSslContexts.configure(
 					SslContextBuilder.forServer(keyManagerFactory)).build();
 
-			var builder = NettyServerBuilder.forPort(port);
+			var builder = NettyServerBuilder.forPort(port).sslContext(context);
 			for (var s : controllers(super.serverURI))
 				builder.addService(s);
-			this.server = builder.sslContext(context).build();
+			this.server = builder.build();
 		} catch (Exception e) {
 			e.getStackTrace();
-			throw new RuntimeException("Initializing fatal error in grpc server.", e);
 		}
-
 	}
 
 	protected abstract List<GrpcController> controllers(String uri);
