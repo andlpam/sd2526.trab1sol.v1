@@ -16,7 +16,9 @@ import sd2526.trab.api.Message;
 
 @Path(RestMessages.PATH)
 public interface RestMessages {
-	
+
+	public static final String HEADER_VERSION = "X-MESSAGES-version";
+
 	final String PATH = "/messages";
 	final String QUERY = "query";
 	final String NAME = "name";
@@ -38,7 +40,8 @@ public interface RestMessages {
 	@GET
 	@Path(MBOX + "/{" + NAME + "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	List<String> getMessages(@PathParam(NAME) String name, @QueryParam(PWD) String pwd, @QueryParam(QUERY) @DefaultValue("") String query);
+	List<String> getMessages(@PathParam(NAME) String name, @QueryParam(PWD) String pwd,
+			@QueryParam(QUERY) @DefaultValue("") String query);
 
 	@DELETE
 	@Path(MBOX + "/{" + NAME + "}/{" + MID + "}")

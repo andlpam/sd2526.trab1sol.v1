@@ -57,13 +57,18 @@ public class ProxyMessages extends JavaBaseService implements Messages, AdminMes
   private Message deserializeFromEmailBody(String emailBody) {
     if (emailBody == null)
       return null;
-    String[] parts = emailBody.split("------");
-    if (parts.length > 1) {
-      try {
-        return JSON.decode(parts[1].trim(), Message.class);
-      } catch (Exception e) {
-        Log.warning("Falha ao descodificar mensagem do email: " + e.getMessage());
+
+    try {
+      // Procura exatamente onde começa e acaba o JSON
+      int start = emailBody.indexOf('{');
+      int end = emailBody.lastIndexOf('}');
+
+      if (start != -1 && end != -1 && start < end) {
+        String cleanJson = emailBody.substring(start, end + 1);
+        return JSON.decode(cleanJson, Message.class);
       }
+    } catch (Exception e) {
+      Log.warning("Falha ao descodificar mensagem do email: " + e.getMessage());
     }
     return null;
   }

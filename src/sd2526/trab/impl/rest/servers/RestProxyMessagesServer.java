@@ -13,8 +13,8 @@ public class RestProxyMessagesServer extends AbstractRestServer {
   private static Logger Log = Logger.getLogger(RestProxyMessagesServer.class.getName());
   public static final int PORT = 8082;
 
-  public RestProxyMessagesServer(int port) {
-    super(Log, Messages.SERVICE_NAME, port);
+  public RestProxyMessagesServer() {
+    super(Log, Messages.SERVICE_NAME, PORT);
   }
 
   @Override
@@ -23,6 +23,7 @@ public class RestProxyMessagesServer extends AbstractRestServer {
   }
 
   public static void main(String[] args) {
+    System.out.println(">>>> MAIN DO PROXY A ARRANCAR! <<<<");
     try {
       boolean cleanState = false;
       if (args.length > 0) {
@@ -41,13 +42,11 @@ public class RestProxyMessagesServer extends AbstractRestServer {
 
       ProxyMessages.getInstance();
 
-      int port = args.length > 1 ? Integer.parseInt(args[1]) : PORT;
+      new RestProxyMessagesServer().start();
 
-      new RestProxyMessagesServer(port).start();
-
-    } catch (Exception e) {
-      Log.severe("Erro crítico ao arrancar o servidor Zoho Proxy: " + e.getMessage());
-      e.printStackTrace();
+    } catch (Throwable t) {
+      System.out.println(">>>> ERRO CATASTRÓFICO <<<<");
+      t.printStackTrace(System.out);
     }
   }
 }
