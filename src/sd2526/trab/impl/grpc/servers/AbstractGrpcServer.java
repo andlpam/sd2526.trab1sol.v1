@@ -3,26 +3,22 @@ package sd2526.trab.impl.grpc.servers;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.logging.Logger;
 
-import javax.management.RuntimeErrorException;
 import javax.net.ssl.KeyManagerFactory;
 
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
 import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
 import sd2526.trab.impl.discovery.Discovery;
 import sd2526.trab.impl.java.servers.AbstractServer;
 import sd2526.trab.impl.utils.IP;
-import io.grpc.netty.shaded.io.grpc.netty.*;
-import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
 
 public abstract class AbstractGrpcServer extends AbstractServer {
 	private static final String SERVER_BASE_URI = "grpc://%s:%s%s";
-
 	private static final String GRPC_CTX = "/grpc";
 
 	protected Server server;
@@ -32,23 +28,26 @@ public abstract class AbstractGrpcServer extends AbstractServer {
 
 		String keyStoreFilename = System.getProperty("javax.net.ssl.keyStore");
 		String keyStorePassword = System.getProperty("javax.net.ssl.keyStorePassword");
+
 		try (FileInputStream input = new FileInputStream(keyStoreFilename)) {
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			keyStore.load(input, keyStorePassword.toCharArray());
+
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
 					KeyManagerFactory.getDefaultAlgorithm());
-
 			keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
 
 			SslContext context = GrpcSslContexts.configure(
 					SslContextBuilder.forServer(keyManagerFactory)).build();
 
 			var builder = NettyServerBuilder.forPort(port).sslContext(context);
-			for (var s : controllers(super.serverURI))
+			for (var s : controllers(super.serverURI)) {
 				builder.addService(s);
+			}
+
 			this.server = builder.build();
 		} catch (Exception e) {
-			e.printStackTrace(); // or log.severe(e.getMessage());
+			e.printStackTrace();
 			throw new RuntimeException("Failed to start gRPC server", e);
 		}
 	}
@@ -56,7 +55,6 @@ public abstract class AbstractGrpcServer extends AbstractServer {
 	protected abstract List<GrpcController> controllers(String uri);
 
 	protected void start() throws IOException {
-
 		Discovery.getInstance().announce(serviceName(), super.serverURI);
 
 		Log.info(String.format("%s gRPC Server ready @ %s\n", service, serverURI));
@@ -68,5 +66,4 @@ public abstract class AbstractGrpcServer extends AbstractServer {
 			System.err.println("*** server shut down");
 		}));
 	}
-
 }

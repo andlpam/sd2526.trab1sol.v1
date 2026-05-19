@@ -6,25 +6,34 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.ext.Provider;
 import sd2526.trab.api.rest.RestMessages;
+import sd2526.trab.impl.zookeeper.ReplicationManager;
+
 import java.io.IOException;
 
 @Provider
 public class VersionHeaderHandler implements ContainerResponseFilter, ContainerRequestFilter {
+
+  private final ReplicationManager repManager;
+
+  public VersionHeaderHandler(ReplicationManager repManager) {
+    this.repManager = repManager;
+  }
+
   @Override
   public void filter(ContainerRequestContext reqCtx) throws IOException {
     String value = reqCtx.getHeaderString(RestMessages.HEADER_VERSION);
     if (value != null && !value.isEmpty()) {
-      version.set(Long.valueOf(value));
+      try {
+        long requiredVersion = Long.parseLong(value);
+        repManager.awaitVersion(requiredVersion);
+      } catch (NumberFormatException e) {
+      }
     }
   }
 
   @Override
   public void filter(ContainerRequestContext reqCtx, ContainerResponseContext resCtx) throws IOException {
-    var value = version.get();
-    if (value != null) {
-      resCtx.getHeaders().add(RestMessages.HEADER_VERSION, Long.toString(value));
-    }
+    long currentVersion = repManager.getCurrentVersion();
+    resCtx.getHeaders().add(RestMessages.HEADER_VERSION, Long.toString(currentVersion));
   }
-
-  public static final ThreadLocal<Long> version = new ThreadLocal<>();
 }

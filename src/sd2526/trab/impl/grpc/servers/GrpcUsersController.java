@@ -27,15 +27,16 @@ public class GrpcUsersController extends GrpcController implements GrpcUsersGrpc
 		return GrpcUsersGrpc.bindService(this);
 	}
 
+	@Override
 	public void postUser(GrpcUser user, StreamObserver<PostUserResult> responseObserver) {
 		super.toGrpcResult(responseObserver,
-			impl.postUser(GrpcUser_to_User( user )),
-			(userAddress) -> PostUserResult.newBuilder().setUserAddress(userAddress).build());
+				impl.postUser(GrpcUser_to_User(user)),
+				(userAddress) -> PostUserResult.newBuilder().setUserAddress(userAddress).build());
 	}
 
 	@Override
 	public void getUser(GetUserArgs request, StreamObserver<GetUserResult> responseObserver) {
-		super.toGrpcResult(responseObserver, 
+		super.toGrpcResult(responseObserver,
 				impl.getUser(request.getName(), request.getPwd()),
 				(user) -> GetUserResult.newBuilder().setUser(User_to_GrpcUser(user)).build());
 	}
@@ -44,12 +45,12 @@ public class GrpcUsersController extends GrpcController implements GrpcUsersGrpc
 	public void updateUser(UpdateUserArgs request, StreamObserver<UpdateUserResult> responseObserver) {
 		super.toGrpcResult(responseObserver,
 				impl.updateUser(request.getName(), request.getPwd(), GrpcUser_to_User(request.getInfo())),
-				(user) -> UpdateUserResult.newBuilder().setUser( User_to_GrpcUser(user)).build());
+				(user) -> UpdateUserResult.newBuilder().setUser(User_to_GrpcUser(user)).build());
 	}
 
 	@Override
 	public void deleteUser(DeleteUserArgs request, StreamObserver<DeleteUserResult> responseObserver) {
-		super.toGrpcResult(responseObserver, 
+		super.toGrpcResult(responseObserver,
 				impl.deleteUser(request.getName(), request.getPwd()),
 				(user) -> DeleteUserResult.newBuilder().setUser(User_to_GrpcUser(user)).build());
 	}
@@ -61,5 +62,3 @@ public class GrpcUsersController extends GrpcController implements GrpcUsersGrpc
 				(user) -> User_to_GrpcUser(user));
 	}
 }
-
-

@@ -17,60 +17,60 @@ public class LeaderElection implements Watcher {
 	private static Logger Log = Logger.getLogger(LeaderElection.class.getName());
 
 	static {
-		// summarizes the logging format
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%4$s: %5$s\n");
-		System.setProperty("java.util.logging.level", "ERROR");
+		System.setProperty("java.util.logging.level", "INFO");
 	}
 
 	private String zookeeperAddress;
 	private String myZNode;
 	private String leader;
-	private String myHost;
+	private String leaderURI; // Substitui o leaderHost
+	private String myURI; // Substitui o myHost
 	private String zDir;
 	private ZooKeeper zk;
 
-	/**
-	 * @param zooAddress  a string in the format host:port that allows to contact
-	 *                    the zookeeper service
-	 * @param serviceName the name of the service for which we are conducting leader
-	 *                    election
-	 */
-	LeaderElection(String zooAddress, String serviceName) {
+	private LeadershipChangeListener listener;
+
+	public interface LeadershipChangeListener {
+		void onLeadershipChanged(boolean isLeader, String leaderHost);
+	}
+
+	public LeaderElection(String zooAddress, String serviceName, String myURI) {
 		this.zookeeperAddress = zooAddress;
-		zDir = "/" + serviceName;
+		this.zDir = "/" + serviceName;
+		this.myURI = myURI;
+		this.leader = "";
+		this.myZNode = "";
+	}
 
-		try {
-			myHost = InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException e) {
-			myHost = "localhost";
-		}
+	public void setLeadershipChangeListener(LeadershipChangeListener listener) {
+		this.listener = listener;
+	}
 
-		leader = "leader";
-		myZNode = "";
+	public boolean isLeader() {
+		return myZNode != null && myZNode.equals(leader);
+	}
+
+	public String getLeaderURI() {
+		return leaderURI;
 	}
 
 	public void start() {
 		try {
 			zk = new ZooKeeper(zookeeperAddress, 3000, this);
-
 			try {
-				// Try to create the main znode for the service (might already exist)
 				zk.create(zDir, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-			} catch (KeeperException | InterruptedException e) {
-				Log.info("Cloud not create the zkNode: " + zDir + "(" + e.getMessage() + ")");
+			} catch (KeeperException.NodeExistsException e) {
 			}
 
-			// Create the ephemeral znode for the host itself
-			myZNode = zk.create(zDir + "/host_", myHost.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
+			// Aqui gravamos o URI COMPLETO em vez de myHost
+			String fullZNodePath = zk.create(zDir + "/node_", myURI.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
 					CreateMode.EPHEMERAL_SEQUENTIAL);
 
+			this.myZNode = fullZNodePath.substring(fullZNodePath.lastIndexOf("/") + 1);
 			Log.info("Created my personal znode: " + myZNode);
-			
-			myZNode = myZNode.substring(myZNode.lastIndexOf("/") + 1);
 
-			//The watch will trigger immediatly because there is at least one node below the root zknode
-			zk.getChildren(zDir, true); 
-			
+			zk.getChildren(zDir, true);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -78,45 +78,38 @@ public class LeaderElection implements Watcher {
 
 	@Override
 	public void process(WatchedEvent event) {
-		try {
-			List<String> children = zk.getChildren(zDir, true);
-			this.checkLeadership(children);
-		} catch (KeeperException | InterruptedException e) {
-			e.printStackTrace();
+		if (event.getType() == Event.EventType.NodeChildrenChanged) {
+			try {
+				List<String> children = zk.getChildren(zDir, true);
+				this.checkLeadership(children);
+			} catch (KeeperException | InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
 	private void checkLeadership(List<String> znodes) {
 		try {
+			if (znodes.isEmpty())
+				return;
+
 			Collections.sort(znodes);
-			this.leader = znodes.get(0);
+			String newLeader = znodes.get(0);
 
-			Log.info("Leader znode: " + this.leader);
-			
-			byte[] data = zk.getData(zDir + "/" + this.leader, false, null);
-			String leaderHost = new String(data);
+			byte[] data = zk.getData(zDir + "/" + newLeader, false, null);
+			this.leaderURI = new String(data); // Agora recupera o URI completo!
 
-			Log.info("Leader = '" + leader + "' running on host " + leaderHost + " ; my znode = " + myZNode
-					+ " ; I am the leader = " + myZNode.equals(leader));
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
+			this.leader = newLeader;
+			boolean isNowLeader = this.isLeader();
 
-	// Main just for testing purposes
-	public static void main(String[] args) throws Exception {
-		LeaderElection election = new LeaderElection("localhost:2181", "test");
-		election.start();
+			Log.info("Leader = '" + leader + "' at URI " + leaderURI + " ; my znode = " + myZNode
+					+ " ; I am the leader = " + isNowLeader);
 
-		new Thread(() -> {
-			for (;;) {
-				try {
-					Thread.sleep(1000);
-				} catch (Exception e) {
-					// do nothing
-				}
+			if (listener != null) {
+				listener.onLeadershipChanged(isNowLeader, leaderURI);
 			}
-		}).start();
-
+		} catch (Exception e) {
+			Log.severe("Error checking leadership: " + e.getMessage());
+		}
 	}
 }
