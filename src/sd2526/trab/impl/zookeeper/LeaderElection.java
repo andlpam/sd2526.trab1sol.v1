@@ -5,7 +5,7 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
-
+import java.util.ArrayList;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -111,5 +111,22 @@ public class LeaderElection implements Watcher {
 		} catch (Exception e) {
 			Log.severe("Error checking leadership: " + e.getMessage());
 		}
+	}
+
+	public List<String> getAllNodesURIs() {
+		List<String> uris = new ArrayList<>();
+		try {
+			// zDir é a tua pasta "/ourorg0/election"
+			List<String> children = zk.getChildren(zDir, false);
+			for (String child : children) {
+				byte[] data = zk.getData(zDir + "/" + child, false, null);
+				if (data != null) {
+					uris.add(new String(data));
+				}
+			}
+		} catch (Exception e) {
+			Log.warning("Erro a ler os URIs dos nós: " + e.getMessage());
+		}
+		return uris;
 	}
 }

@@ -40,8 +40,6 @@ public class RestProxyMessagesServer extends AbstractRestServer {
         Log.info("A manter o estado anterior (não foram apagados emails).");
       }
 
-      ProxyMessages.getInstance();
-
       new RestProxyMessagesServer().start();
 
     } catch (Throwable t) {

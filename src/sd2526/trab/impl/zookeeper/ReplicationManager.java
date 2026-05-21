@@ -1,7 +1,26 @@
 package sd2526.trab.impl.zookeeper;
 
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
+
+import org.hsqldb.persist.Log;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import sd2526.trab.impl.db.utils.JSON;
+import sd2526.trab.impl.java.utils.ReplicationLogEntry;
+import java.nio.file.Files;
+import java.net.URI;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.MediaType;
+import java.io.FileWriter;
 
 public class ReplicationManager {
 
@@ -9,7 +28,7 @@ public class ReplicationManager {
 
   // A versão atual do estado deste servidor (começaste muito bem aqui!)
   private final AtomicLong cur_version = new AtomicLong(0L);
-
+  private final ExecutorService executor = Executors.newCachedThreadPool();
   // Referência para a eleição de líder (para saber o estado atual do nó)
   private final LeaderElection leaderElection;
 
@@ -77,4 +96,64 @@ public class ReplicationManager {
     }
     return null;
   }
+
+  private List<String> getSecundariesUris() {
+    List<String> allUris = leaderElection.getAllNodesURIs();
+    List<String> secondaries = new ArrayList<>();
+
+    String myPrimaryUri = leaderElection.getLeaderURI();
+
+    for (String uri : allUris) {
+      // Só adiciona se NÃO FOR o URI do próprio Primário
+      if (!uri.equals(myPrimaryUri)) {
+        secondaries.add(uri);
+      }
+    }
+    return secondaries;
+  }
+
+  private void saveToLocalDisk(ReplicationLogEntry entry) {
+    try {
+      String jsonLine = JSON.encode(entry) + "\n";
+
+      String fileName = "operations_log_" + cur_version.get() + ".txt"; // Podes adaptar o nome
+
+      Files.writeString(
+          Paths.get("operations_log.txt"),
+          jsonLine,
+          StandardOpenOption.CREATE,
+          StandardOpenOption.APPEND);
+    } catch (Exception e) {
+      Log.severe("Erro fatal ao escrever no disco local: " + e.getMessage());
+    }
+  }
+
+  public void logAndPropagateToSecundaries(ReplicationLogEntry wrapper) {
+    saveToLocalDisk(wrapper);
+
+    List<String> uris = getSecundariesUris();
+    if (uris.isEmpty())
+      return;
+
+    Client client = ClientBuilder.newClient();
+
+    for (String uri : uris) {
+
+      executor.submit(() -> {
+        try {
+          String endpoint = uri + "/internal/replicate";
+
+          client.target(endpoint)
+              .request()
+              .post(Entity.entity(wrapper, MediaType.APPLICATION_JSON));
+
+          Log.info("Replicado com sucesso para: " + uri);
+        } catch (Exception e) {
+          Log.warning("Falha a replicar para " + uri);
+        }
+      });
+
+    }
+  }
+
 }

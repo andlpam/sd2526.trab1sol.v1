@@ -1,0 +1,9 @@
+package sd2526.trab.impl.java.utils;
+
+public enum OperationType {
+  POST_MESSAGE,
+  DELETE_MESSAGE,
+  REMOVE_INBOX,
+  REMOTE_DELETE_INBOX,
+  REMOTE_POST_MESSAGE
+}
