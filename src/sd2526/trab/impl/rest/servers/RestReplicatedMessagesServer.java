@@ -3,71 +3,41 @@ package sd2526.trab.impl.rest.servers;
 import java.util.logging.Logger;
 import org.glassfish.jersey.server.ResourceConfig;
 import sd2526.trab.api.java.Messages;
-import sd2526.trab.impl.rest.filters.SidHeaderHandler;
-import sd2526.trab.impl.rest.filters.VersionHeaderHandler;
-import sd2526.trab.impl.zookeeper.LeaderElection;
-import sd2526.trab.impl.zookeeper.ReplicationManager;
-import sd2526.trab.impl.utils.IP;
-import sd2526.trab.impl.java.servers.ReplicatedMessages;
 import sd2526.trab.impl.java.servers.JavaMessages;
+import sd2526.trab.impl.java.servers.KafkaReplicatedMessages;
+import sd2526.trab.impl.rest.filters.VersionHeaderHandler;
 
 public class RestReplicatedMessagesServer extends AbstractRestServer {
-  public static final int PORT = 7987;
   private static Logger Log = Logger.getLogger(RestReplicatedMessagesServer.class.getName());
+  private static Messages replicatedEngine;
 
-  private static ReplicationManager repManager;
-  private static ReplicatedMessages replicatedEngine;
-
-  public RestReplicatedMessagesServer() {
-    super(Log, Messages.SERVICE_NAME, PORT);
+  public RestReplicatedMessagesServer(int port) {
+    super(Log, Messages.SERVICE_NAME, port);
   }
 
   @Override
   void registerResources(ResourceConfig config) {
-    // Usar registerInstances para o Jersey detetar bem os métodos (como fizemos nos
-    // outros)
+    // Registar as fachadas com a nova engine Kafka
     config.registerInstances(new RestMessagesResource(replicatedEngine));
-    config.registerInstances(new RestReplicatedMessagesResource(replicatedEngine));
-
-    config.register(new VersionHeaderHandler(repManager));
-    config.register(new SidHeaderHandler());
+    config.registerInstances(new VersionHeaderHandler((KafkaReplicatedMessages) replicatedEngine));
   }
 
   public static void main(String[] args) {
     try {
-      System.out.println(">>>> MAIN DO REPLICATED A ARRANCAR! <<<<");
+      System.out.println(">>>> MAIN DO REPLICATED (KAFKA) A ARRANCAR! <<<<");
 
-      String zkServers = (args.length > 0) ? args[0] : "localhost:2181";
-      String secret = (args.length > 1) ? args[1] : "default_secret";
+      // Argumentos que o Tester nos passa
+      String kafkaServers = (args.length > 0) ? args[0] : "kafka:9092";
+      // O porto, caso o Tester queira injetar (senão usa o default)
+      int port = (args.length > 2) ? Integer.parseInt(args[2]) : 7987;
 
-      String myURI = String.format("https://%s:%s/rest", IP.hostname(), PORT);
+      Messages baseServer = JavaMessages.getInstance(); // A nossa base de dados local
+      replicatedEngine = new KafkaReplicatedMessages(baseServer, kafkaServers);
 
-      Log.info("A iniciar eleição de líder com Zookeeper em: " + zkServers + " para " + myURI);
-
-      LeaderElection election = new LeaderElection(zkServers, Messages.SERVICE_NAME, myURI);
-      repManager = new ReplicationManager(election, secret);
-      election.start();
-
-      // CORREÇÃO FATAL: O baseServer tem de ser o JavaMessages (Base de Dados local)
-      // e não o Proxy do Zoho!
-      Messages baseServer = JavaMessages.getInstance();
-
-      replicatedEngine = new ReplicatedMessages(baseServer, repManager);
-
-      // Esperar 1.5s para dar tempo à rede e ao Zookeeper de elegerem o líder
-      Thread.sleep(1500);
-
-      if (!repManager.isPrimary()) {
-        Log.info("Sou secundário! A iniciar recovery...");
-        replicatedEngine.recoverStateFromPrimary();
-      } else {
-        Log.info("Fui eleito Primário pelo Zookeeper!");
-      }
-
-      new RestReplicatedMessagesServer().start();
+      new RestReplicatedMessagesServer(port).start();
 
     } catch (Exception e) {
-      System.err.println(">>>> ERRO CATASTRÓFICO NO ARRANQUE DO SERVIDOR REPLICADO <<<<");
+      System.err.println(">>>> ERRO CATASTRÓFICO <<<<");
       e.printStackTrace();
     }
   }

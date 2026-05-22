@@ -1,44 +1,35 @@
 package sd2526.trab.impl.rest.filters;
 
+import java.io.IOException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.ext.Provider;
-import sd2526.trab.api.rest.RestMessages;
-import sd2526.trab.api.rest.RestReplicatedMessages;
-import sd2526.trab.impl.zookeeper.ReplicationManager;
-
-import java.io.IOException;
+import sd2526.trab.impl.java.servers.KafkaReplicatedMessages;
 
 @Provider
-public class VersionHeaderHandler implements ContainerResponseFilter, ContainerRequestFilter {
+public class VersionHeaderHandler implements ContainerRequestFilter, ContainerResponseFilter {
 
-  private final ReplicationManager repManager;
+  private final KafkaReplicatedMessages engine;
 
-  public VersionHeaderHandler(ReplicationManager repManager) {
-    this.repManager = repManager;
+  public VersionHeaderHandler(KafkaReplicatedMessages engine) {
+    this.engine = engine;
   }
 
   @Override
-  public void filter(ContainerRequestContext reqCtx) throws IOException {
-    String path = reqCtx.getUriInfo().getPath();
-    if (path.contains(RestReplicatedMessages.PATH)) { // ignora tudo o que vai para "/replicate"
-      return;
-    }
-    String value = reqCtx.getHeaderString(RestMessages.HEADER_VERSION);
-    if (value != null && !value.isEmpty()) {
-      try {
-        long requiredVersion = Long.parseLong(value);
-        repManager.awaitVersion(requiredVersion);
-      } catch (NumberFormatException e) {
-      }
+  public void filter(ContainerRequestContext requestContext) throws IOException {
+    String clientVersion = requestContext.getHeaderString("X-MESSAGES-version");
+    if (clientVersion != null) {
+      engine.awaitVersion(Long.parseLong(clientVersion));
     }
   }
 
   @Override
-  public void filter(ContainerRequestContext reqCtx, ContainerResponseContext resCtx) throws IOException {
-    long currentVersion = repManager.getCurrentVersion();
-    resCtx.getHeaders().add(RestMessages.HEADER_VERSION, Long.toString(currentVersion));
+  public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+      throws IOException {
+    // Injeta a versão local na resposta para o Tester guardar e mandar no próximo
+    // pedido
+    responseContext.getHeaders().add("X-MESSAGES-version", String.valueOf(engine.getLocalVersion()));
   }
 }
