@@ -16,40 +16,45 @@ public class RestAdminMessagesClient extends RestClient implements AdminMessages
 
 	@Override
 	public Result<Void> remotePostMessage(Message m) {
-		return super.reTry( () -> doRemotePostMessage(m) );
+		return super.reTry(() -> doRemotePostMessage(m));
 	}
 
 	@Override
 	public Result<Void> remoteDeleteMessage(String mid) {
-		return super.reTry( () -> doRemoteDeleteMessage(mid) );
+		return super.reTry(() -> doRemoteDeleteMessage(mid));
 	}
 
 	@Override
 	public Result<Void> remoteDeleteUserInbox(String name) {
-		return super.reTry( () -> doRemoteDeleteUserInbox(name) );
+		return super.reTry(() -> doRemoteDeleteUserInbox(name));
 	}
-	
+
 	private Result<Void> doRemotePostMessage(Message msg) {
-		return super.toJavaResult( target
+		return super.toJavaResult(target
 				.path(RestAdminMessages.ADMIN)
 				.request()
-				.post( Entity.entity(msg, MediaType.APPLICATION_JSON )));
+				.post(Entity.entity(msg, MediaType.APPLICATION_JSON)));
 	}
 
 	private Result<Void> doRemoteDeleteMessage(String mid) {
-		return super.toJavaResult( target
+		return super.toJavaResult(target
 				.path(RestAdminMessages.ADMIN)
-				.path( mid )
+				.path(mid)
 				.request()
 				.delete());
 	}
-	
+
 	private Result<Void> doRemoteDeleteUserInbox(String name) {
-		return super.toJavaResult( target
+		return super.toJavaResult(target
 				.path(RestAdminMessages.ADMIN)
 				.path(RestAdminMessages.INBOX)
-				.path( name )
+				.path(name)
 				.request()
 				.delete());
+	}
+
+	@Override
+	public Result<Void> adminRemoveInboxMessage(String name, String mid) {
+		return Result.error(Result.ErrorCode.NOT_IMPLEMENTED);
 	}
 }

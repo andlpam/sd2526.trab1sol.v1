@@ -119,4 +119,12 @@ public class JavaMessages extends AbstractMessages {
 					});
 		});
 	}
+
+	@Override
+	public Result<Void> adminRemoveInboxMessage(String name, String mid) {
+		Log.info(() -> "adminRemoveInboxMessage (Secundário) : name = %s, mid = %s\n".formatted(name, mid));
+
+		return performRemoveInboxMessage(name, mid);
+	}
+
 }

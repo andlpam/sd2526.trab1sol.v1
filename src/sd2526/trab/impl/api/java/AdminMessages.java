@@ -10,4 +10,6 @@ public interface AdminMessages {
 	Result<Void> remoteDeleteMessage(String mid);
 
 	Result<Void> remoteDeleteUserInbox(String name);
+
+	Result<Void> adminRemoveInboxMessage(String name, String mid);
 }

@@ -19,7 +19,7 @@ public class RestProxyMessagesServer extends AbstractRestServer {
 
   @Override
   protected void registerResources(ResourceConfig config) {
-    config.register(new RestMessagesResource(ProxyMessages.getInstance()));
+    config.registerInstances(new RestMessagesResource(ProxyMessages.getInstance()));
   }
 
   public static void main(String[] args) {

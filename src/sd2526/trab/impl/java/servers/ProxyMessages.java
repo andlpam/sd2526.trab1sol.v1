@@ -143,4 +143,9 @@ public class ProxyMessages extends AbstractMessages {
       return error(INTERNAL_ERROR);
     }
   }
+
+  @Override
+  public Result<Void> adminRemoveInboxMessage(String name, String mid) {
+    return Result.error(Result.ErrorCode.NOT_IMPLEMENTED);
+  }
 }
