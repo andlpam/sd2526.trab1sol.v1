@@ -20,16 +20,21 @@ public class VersionHeaderHandler implements ContainerRequestFilter, ContainerRe
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
     String clientVersion = requestContext.getHeaderString("X-MESSAGES-version");
-    if (clientVersion != null) {
-      engine.awaitVersion(Long.parseLong(clientVersion));
+    if (clientVersion != null && !clientVersion.trim().isEmpty()) {
+      try {
+        // O Tester pode juntar cabeçalhos com vírgula. Apanhamos só o primeiro para não
+        // dar erro.
+        String cleanVersion = clientVersion.split(",")[0].trim();
+        engine.awaitVersion(Long.parseLong(cleanVersion));
+      } catch (NumberFormatException e) {
+        // Se o Tester mandar lixo que não é número, ignoramos em vez de dar Erro 500
+      }
     }
   }
 
   @Override
   public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
       throws IOException {
-    // Injeta a versão local na resposta para o Tester guardar e mandar no próximo
-    // pedido
     responseContext.getHeaders().add("X-MESSAGES-version", String.valueOf(engine.getLocalVersion()));
   }
 }
