@@ -69,7 +69,7 @@ public class DataModelAdaptor {
 		return b;
 	}
 	
-	public static GrpcAdminMessage Message_to_GrpcAdminMessage( Message from )  {
+	public static GrpcAdminMessage Message_to_GrpcAdminMessage( Message from, long sid )  {
 		var b = GrpcAdminMessage.newBuilder();
 		
 		setOptionalFieldIfNotNull( from::getId, b::setId);
@@ -79,6 +79,7 @@ public class DataModelAdaptor {
 		setOptionalFieldIfNotNull( from::getCreationTime, b::setCreationTime);
 		
 		b.addAllDestination( from.getDestination() );
+		b.setSid( sid );
 				
 		return b.build();
 	}

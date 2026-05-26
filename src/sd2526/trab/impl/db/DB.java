@@ -11,8 +11,12 @@ import sd2526.trab.impl.db.Hibernate.HibernateSession;
 
 public class DB {
 	
+	public static <T> Result<List<T>> select(String query, Class<T> clazz, Object... params) {
+		return Hibernate.getInstance().inSession( (session) -> session.select(query, clazz, params));
+	}	
+		
 	public static <T> Result<List<T>> select(String query, Class<T> clazz) {
-		return Hibernate.getInstance().inSession( (session) -> session.select(query, clazz));
+		return select(query, clazz, new Object[0]);
 	}	
 		
 	public static <T> Result<T> getOne(Object id, Class<T> clazz) {

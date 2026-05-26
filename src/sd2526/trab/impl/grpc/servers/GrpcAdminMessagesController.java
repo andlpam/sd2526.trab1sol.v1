@@ -9,6 +9,7 @@ import io.grpc.stub.StreamObserver;
 import sd2526.trab.impl.api.java.AdminMessages;
 import sd2526.trab.impl.grpc.generated_java.AdminMessagesProtoBuf.GrpcAdminMessage;
 import sd2526.trab.impl.grpc.generated_java.AdminMessagesProtoBuf.RemoteDeleteMessageArgs;
+import sd2526.trab.impl.grpc.generated_java.AdminMessagesProtoBuf.RemoteDeleteUserInboxArgs;
 import sd2526.trab.impl.grpc.generated_java.GrpcAdminMessagesGrpc;
 import sd2526.trab.impl.java.servers.JavaMessages;
 
@@ -24,14 +25,21 @@ public class GrpcAdminMessagesController extends GrpcController implements GrpcA
 	@Override
 	public void remotePostMessage(GrpcAdminMessage request, StreamObserver<Empty> responseObserver) {
 		super.toGrpcResult(responseObserver,
-				((AdminMessages)impl).remotePostMessage( GrpcAdminMessage_to_Message(request)),
+				((AdminMessages)impl).remotePostMessage( GrpcAdminMessage_to_Message(request), request.getSid()),
 				(__) -> Empty.newBuilder().build());
 	}
 
 	@Override
 	public void remoteDeleteMessage(RemoteDeleteMessageArgs request, StreamObserver<Empty> responseObserver) {
 		super.toGrpcResult(responseObserver,
-				((AdminMessages)impl).remoteDeleteMessage(  request.getMid() ),
+				((AdminMessages)impl).remoteDeleteMessage( request.getMid(), request.getSid() ),
+				(__) -> Empty.newBuilder().build());
+	}
+
+	@Override
+	public void remoteDeleteUserInbox(RemoteDeleteUserInboxArgs request, StreamObserver<Empty> responseObserver) {
+		super.toGrpcResult(responseObserver,
+				((AdminMessages)impl).remoteDeleteUserInbox( request.getName(), request.getSid() ),
 				(__) -> Empty.newBuilder().build());
 	}
 }

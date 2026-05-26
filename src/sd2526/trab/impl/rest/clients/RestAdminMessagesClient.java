@@ -15,41 +15,44 @@ public class RestAdminMessagesClient extends RestClient implements AdminMessages
 	}
 
 	@Override
-	public Result<Void> remotePostMessage(Message m) {
-		return super.reTry(() -> doRemotePostMessage(m));
+	public Result<Void> remotePostMessage(Message m, long sid) {
+		return super.reTry(() -> doRemotePostMessage(m, sid));
 	}
 
 	@Override
-	public Result<Void> remoteDeleteMessage(String mid) {
-		return super.reTry(() -> doRemoteDeleteMessage(mid));
+	public Result<Void> remoteDeleteMessage(String mid, long sid) {
+		return super.reTry(() -> doRemoteDeleteMessage(mid, sid));
 	}
 
 	@Override
-	public Result<Void> remoteDeleteUserInbox(String name) {
-		return super.reTry(() -> doRemoteDeleteUserInbox(name));
+	public Result<Void> remoteDeleteUserInbox(String name, long sid) {
+		return super.reTry(() -> doRemoteDeleteUserInbox(name, sid));
 	}
 
-	private Result<Void> doRemotePostMessage(Message msg) {
+	private Result<Void> doRemotePostMessage(Message msg, long sid) {
 		return super.toJavaResult(target
 				.path(RestAdminMessages.ADMIN)
 				.request()
+				.header(RestAdminMessages.HEADER_SID, sid)
 				.post(Entity.entity(msg, MediaType.APPLICATION_JSON)));
 	}
 
-	private Result<Void> doRemoteDeleteMessage(String mid) {
+	private Result<Void> doRemoteDeleteMessage(String mid, long sid) {
 		return super.toJavaResult(target
 				.path(RestAdminMessages.ADMIN)
 				.path(mid)
 				.request()
+				.header(RestAdminMessages.HEADER_SID, sid)
 				.delete());
 	}
 
-	private Result<Void> doRemoteDeleteUserInbox(String name) {
+	private Result<Void> doRemoteDeleteUserInbox(String name, long sid) {
 		return super.toJavaResult(target
 				.path(RestAdminMessages.ADMIN)
 				.path(RestAdminMessages.INBOX)
 				.path(name)
 				.request()
+				.header(RestAdminMessages.HEADER_SID, sid)
 				.delete());
 	}
 

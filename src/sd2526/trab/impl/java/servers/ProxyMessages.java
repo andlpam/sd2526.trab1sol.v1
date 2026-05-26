@@ -133,8 +133,8 @@ public class ProxyMessages extends AbstractMessages {
   }
 
   @Override
-  public Result<Void> remoteDeleteUserInbox(String name) {
-    Log.info(() -> "remoteDeleteUserInbox (Proxy) : name = %s\n".formatted(name));
+  public Result<Void> remoteDeleteUserInbox(String name, long sid) {
+    Log.info(() -> "remoteDeleteUserInbox (Proxy) : name = %s, sid = %d\n".formatted(name, sid));
     try {
       Zoho.getInstance().deleteAllEmails();
       return ok();

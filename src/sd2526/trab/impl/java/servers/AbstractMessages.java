@@ -63,7 +63,7 @@ public abstract class AbstractMessages extends JavaBaseService implements Messag
   @Override
   public Result<String> postMessage(String pwd, Message msg) {
     Log.info(() -> "postMessage : pwd = %s, msg = %s\n".formatted(pwd, msg));
-    return getUser(msg.getSender(), pwd).thenWith((user) -> doAsyncPost(user, msg));
+    return getUser(msg.getSender(), pwd).thenWith((user) -> doAsyncPost(senderName(msg.getSender()), user, msg));
   }
 
   @Override
@@ -102,19 +102,26 @@ public abstract class AbstractMessages extends JavaBaseService implements Messag
   }
 
   @Override
-  public Result<Void> remotePostMessage(Message msg) {
-    Log.info(() -> "remotePostMessage : msg = %s\n".formatted(msg));
+  public Result<Void> remotePostMessage(Message msg, long sid) {
+    Log.info(() -> "remotePostMessage : msg = %s, sid = %d\n".formatted(msg, sid));
     var localAddresses = getLocalRecipientAddresses(msg);
     return postToLocalInboxes(localAddresses, msg);
   }
 
   @Override
-  public Result<Void> remoteDeleteMessage(String mid) {
-    Log.info(() -> "remoteDeleteMessage : mid = %s\n".formatted(mid));
+  public Result<Void> remoteDeleteMessage(String mid, long sid) {
+    Log.info(() -> "remoteDeleteMessage : mid = %s, sid = %d\n".formatted(mid, sid));
     return deleteFromLocalInbox(mid);
   }
 
-  public Result<String> doAsyncPost(User sender, Message msg) {
+  private String senderName(String sender) {
+    if (sender.contains("<")) {
+      return sender.substring(sender.indexOf("<") + 1, sender.indexOf("@"));
+    }
+    return sender.split("@")[0];
+  }
+
+  public Result<String> doAsyncPost(String senderName, User sender, Message msg) {
     return getCachedMessage(msg.originId()).mapValue(Message::getId).orElse(() -> {
 
       msg.setId("%s+%04d".formatted(THIS_DOMAIN, counter.incrementAndGet()));
@@ -141,7 +148,7 @@ public abstract class AbstractMessages extends JavaBaseService implements Messag
           var domainRecipientAddressess = e.getValue();
 
           jobs.submit(domain, () -> {
-            var res = super.reTry(() -> Clients.AdminMessagesClient.get(domain).remotePostMessage(msg),
+            var res = super.reTry(() -> Clients.AdminMessagesClient.get(domain).remotePostMessage(msg, 0L),
                 REMOTE_COMM_DEADLINE);
             if (res.error() == ErrorCode.TIMEOUT) {
               for (var address : domainRecipientAddressess)
@@ -161,7 +168,7 @@ public abstract class AbstractMessages extends JavaBaseService implements Messag
         deleteFromLocalInbox(msg.getId());
       } else {
         jobs.submit(domain, () -> {
-          super.reTry(() -> Clients.AdminMessagesClient.get(domain).remoteDeleteMessage(msg.getId()),
+          super.reTry(() -> Clients.AdminMessagesClient.get(domain).remoteDeleteMessage(msg.getId(), 0L),
               REMOTE_COMM_DEADLINE);
         });
       }
@@ -172,7 +179,7 @@ public abstract class AbstractMessages extends JavaBaseService implements Messag
   public void doAsyncRemotePost(String remoteDomain, Message msg) {
     Log.info(() -> "\nenqueueRemotePost : remoteDomain=%s, msg = %s\n".formatted(remoteDomain, msg));
     jobs.submit(remoteDomain, () -> {
-      super.reTry(() -> Clients.AdminMessagesClient.get(remoteDomain).remotePostMessage(msg), REMOTE_COMM_DEADLINE);
+      super.reTry(() -> Clients.AdminMessagesClient.get(remoteDomain).remotePostMessage(msg, 0L), REMOTE_COMM_DEADLINE);
     });
   }
 
@@ -213,8 +220,8 @@ public abstract class AbstractMessages extends JavaBaseService implements Messag
 
   protected Result<User> getUser(String user, String pwd) {
     try {
-      var name = user.split("@", 2)[0];
-      return Clients.UsersClient.get().getUser(name, pwd);
+      var name = user.contains("@") ? user.split("@", 2)[0] : user;
+      return reTry(() -> Clients.UsersClient.get().getUser(name, pwd), REMOTE_COMM_DEADLINE);
     } catch (Exception x) {
       x.printStackTrace();
       return Result.error(INTERNAL_ERROR);
@@ -222,7 +229,7 @@ public abstract class AbstractMessages extends JavaBaseService implements Messag
   }
 
   protected Result<Set<String>> checkUsers(Collection<String> addresses) {
-    return Clients.AdminUsersClient.get().checkUsers(addresses);
+    return reTry(() -> Clients.AdminUsersClient.get().checkUsers(addresses), REMOTE_COMM_DEADLINE);
   }
 
   protected Result<Message> getCachedMessage(String mid) {

@@ -2,6 +2,7 @@ package sd2526.trab.impl.api.rest;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -13,18 +14,19 @@ public interface RestAdminMessages {
 	final String MID = "mid";
 	final String NAME = "name";
 	final String INBOX = "inbox";
-	
+	final String HEADER_SID = "X-MESSAGES-sid";
+
 	@POST
 	@Path(ADMIN)
 	@Consumes(MediaType.APPLICATION_JSON)
-	void remotePostMessage(Message m);
+	void remotePostMessage(Message m, @HeaderParam(HEADER_SID) long sid);
 
 	@DELETE
 	@Path(ADMIN + "/{" + MID + "}")
-	void remoteDeleteMessage(@PathParam(MID) String mid);
-	
+	void remoteDeleteMessage(@PathParam(MID) String mid, @HeaderParam(HEADER_SID) long sid);
+
 	@DELETE
 	@Path(ADMIN + "/" + INBOX + "/{" + NAME + "}")
-	void remoteDeleteUserInbox(@PathParam(NAME) String name);
+	void remoteDeleteUserInbox(@PathParam(NAME) String name, @HeaderParam(HEADER_SID) long sid);
 
 }

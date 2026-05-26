@@ -54,17 +54,17 @@ public class RestMessagesResource extends RestResource implements RestMessages, 
 	}
 
 	@Override
-	public void remotePostMessage(Message m) {
-		super.resultOrThrow(((AdminMessages) impl()).remotePostMessage(m));
+	public void remotePostMessage(Message m, long sid) {
+		super.resultOrThrow(((AdminMessages) impl()).remotePostMessage(m, sid));
 	}
 
 	@Override
-	public void remoteDeleteMessage(String mid) {
-		super.resultOrThrow(((AdminMessages) impl()).remoteDeleteMessage(mid));
+	public void remoteDeleteMessage(String mid, long sid) {
+		super.resultOrThrow(((AdminMessages) impl()).remoteDeleteMessage(mid, sid));
 	}
 
 	@Override
-	public void remoteDeleteUserInbox(String name) {
-		super.resultOrThrow(((AdminMessages) impl()).remoteDeleteUserInbox(name));
+	public void remoteDeleteUserInbox(String name, long sid) {
+		super.resultOrThrow(((AdminMessages) impl()).remoteDeleteUserInbox(name, sid));
 	}
 }

@@ -20,20 +20,20 @@ public class GrpcAdminMessagesClient extends GrpcClient implements AdminMessages
 	}
 
 	@Override
-	public Result<Void> remotePostMessage(Message msg) {
-		return super.toJavaResult(() -> admin.remotePostMessage(Message_to_GrpcAdminMessage(msg))).mapToVoid();
+	public Result<Void> remotePostMessage(Message msg, long sid) {
+		return super.toJavaResult(() -> admin.remotePostMessage(Message_to_GrpcAdminMessage(msg, sid))).mapToVoid();
 	}
 
 	@Override
-	public Result<Void> remoteDeleteMessage(String mid) {
-		return super.toJavaResult(() -> admin.remoteDeleteMessage(RemoteDeleteMessageArgs.newBuilder().setMid(mid).build()))
+	public Result<Void> remoteDeleteMessage(String mid, long sid) {
+		return super.toJavaResult(() -> admin.remoteDeleteMessage(RemoteDeleteMessageArgs.newBuilder().setMid(mid).setSid(sid).build()))
 				.mapToVoid();
 	}
 
 	@Override
-	public Result<Void> remoteDeleteUserInbox(String name) {
+	public Result<Void> remoteDeleteUserInbox(String name, long sid) {
 		return super.toJavaResult(
-				() -> admin.remoteDeleteUserInbox(RemoteDeleteUserInboxArgs.newBuilder().setName(name).build())).mapToVoid();
+				() -> admin.remoteDeleteUserInbox(RemoteDeleteUserInboxArgs.newBuilder().setName(name).setSid(sid).build())).mapToVoid();
 	}
 
 	@Override

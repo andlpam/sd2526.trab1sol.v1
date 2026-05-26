@@ -11,6 +11,8 @@ import sd2526.trab.impl.java.servers.KafkaReplicatedMessages;
 @Provider
 public class VersionHeaderHandler implements ContainerRequestFilter, ContainerResponseFilter {
 
+  public static final ThreadLocal<Long> version = new ThreadLocal<>();
+
   private final KafkaReplicatedMessages engine;
 
   public VersionHeaderHandler(KafkaReplicatedMessages engine) {
@@ -19,6 +21,7 @@ public class VersionHeaderHandler implements ContainerRequestFilter, ContainerRe
 
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
+    version.set(null);
     String clientVersion = requestContext.getHeaderString("X-MESSAGES-version");
     if (clientVersion != null && !clientVersion.trim().isEmpty()) {
       try {
@@ -35,6 +38,10 @@ public class VersionHeaderHandler implements ContainerRequestFilter, ContainerRe
   @Override
   public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
       throws IOException {
-    responseContext.getHeaders().add("X-MESSAGES-version", String.valueOf(engine.getLocalVersion()));
+    Long v = version.get();
+    if (v == null) {
+      v = engine.getLocalVersion();
+    }
+    responseContext.getHeaders().add("X-MESSAGES-version", String.valueOf(v));
   }
 }

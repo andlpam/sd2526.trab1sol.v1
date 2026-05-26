@@ -9,7 +9,6 @@ import java.net.NetworkInterface;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -66,7 +65,7 @@ class DiscoveryImpl implements Discovery {
 
 	private static Discovery singleton;
 
-	private Map<String, Set<URI>> uris = new ConcurrentHashMap<>();
+	private Map<String, Map<URI, Long>> uris = new ConcurrentHashMap<>();
 	
 	synchronized static Discovery getInstance() {
 		if (singleton == null) {
@@ -94,11 +93,11 @@ class DiscoveryImpl implements Discovery {
 						ds.send(pkt);
 						Sleep.ms(DISCOVERY_ANNOUNCE_PERIOD);
 					} catch (Exception e) {
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				// e.printStackTrace();
 			}
 		}).start();
 	}
@@ -107,7 +106,13 @@ class DiscoveryImpl implements Discovery {
 	@Override
 	public URI[] knownUrisOf(String serviceName, int minEntries) {
 		while(true) {
-			var res = uris.getOrDefault(serviceName, Collections.emptySet());
+			var now = System.currentTimeMillis();
+			var domainUris = uris.getOrDefault(serviceName, Collections.emptyMap());
+			var res = domainUris.entrySet().stream()
+					.filter( e -> now - e.getValue() < DISCOVERY_RETRY_TIMEOUT )
+					.map( e -> e.getKey())
+					.toList();
+
 			if( res.size() >= minEntries )
 				return res.toArray( new URI[res.size()]);
 			else
@@ -132,15 +137,15 @@ class DiscoveryImpl implements Discovery {
 						if (parts.length == 2) {
 							var serviceName = parts[0];
 							var uri = URI.create(parts[1]);
-							uris.computeIfAbsent(serviceName, (k) -> ConcurrentHashMap.newKeySet()).add( uri );
+							uris.computeIfAbsent(serviceName, (k) -> new ConcurrentHashMap<>()).put( uri, System.currentTimeMillis() );
 						}
 
 					} catch (Exception x) {
-						x.printStackTrace();
+						// x.printStackTrace();
 					}
 				}
 			} catch (Exception x) {
-				x.printStackTrace();
+				// x.printStackTrace();
 			}
 		}).start();
 	}

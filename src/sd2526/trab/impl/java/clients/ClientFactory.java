@@ -41,7 +41,8 @@ public class ClientFactory<T> {
 	
 	public T get(String domain) {
 		var sn = "%s@%s".formatted(serviceName, domain);
-		return get(Discovery.getInstance().knownUrisOf(sn, 1)[0]);
+		var uris = Discovery.getInstance().knownUrisOf(sn, 1);
+		return get(uris[java.util.concurrent.ThreadLocalRandom.current().nextInt(uris.length)]);
 	}
 	
 	private T newClient( String serverURI ) {
@@ -54,7 +55,8 @@ public class ClientFactory<T> {
 	}
 	
 	public T async() {
-		return get(Discovery.getInstance().knownUrisOf(serviceName, 1)[0]);
+		var uris = Discovery.getInstance().knownUrisOf(serviceName, 1);
+		return get(uris[java.util.concurrent.ThreadLocalRandom.current().nextInt(uris.length)]);
 	}
 	
 	public T get(URI uri) {

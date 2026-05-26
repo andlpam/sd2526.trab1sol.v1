@@ -52,8 +52,8 @@ public class JavaMessages extends AbstractMessages {
 
 	@Override
 	protected Result<List<String>> fetchAllInboxMessages(String name) {
-		var sqlExpr = "SELECT m.mid FROM InboxEntry m WHERE m.recipient = '%s'".formatted(name);
-		return DB.select(sqlExpr, String.class);
+		var sqlExpr = "SELECT m.mid FROM InboxEntry m WHERE m.recipient = ?1";
+		return DB.select(sqlExpr, String.class, name);
 	}
 
 	@Override
@@ -62,11 +62,11 @@ public class JavaMessages extends AbstractMessages {
 				SELECT m.id FROM Message m
 				INNER JOIN InboxEntry e
 				ON e.mid = m.id
-				AND e.recipient = '%s'
-				WHERE (upper(m.subject) LIKE '%%%s%%' OR upper(m.contents) LIKE '%%%s%%')
-				""".formatted(name, query.toUpperCase(), query.toUpperCase());
+				AND e.recipient = ?1
+				WHERE (upper(m.subject) LIKE ?2 OR upper(m.contents) LIKE ?3)
+				""";
 
-		return DB.select(sqlExpr, String.class);
+		return DB.select(sqlExpr, String.class, name, "%" + query.toUpperCase() + "%", "%" + query.toUpperCase() + "%");
 	}
 
 	@Override
@@ -80,14 +80,15 @@ public class JavaMessages extends AbstractMessages {
 
 	@Override
 	protected Result<Void> deleteFromLocalInbox(String mid) {
-		var sql = "SELECT * FROM InboxEntry e WHERE e.mid = '%s'".formatted(mid);
+		var sql = "SELECT * FROM InboxEntry e WHERE e.mid = ?1";
 
 		return DB.transaction(hibernate -> {
-			hibernate.getOne(mid, Message.class)
-					.thenWith(msg -> hibernate.deleteOne(msg));
-
-			return hibernate.select(sql, InboxEntry.class)
-					.thenWith((entries) -> hibernate.deleteMany(entries));
+			return hibernate.select(sql, InboxEntry.class, mid)
+					.thenWith(entries -> hibernate.deleteMany(entries))
+					.then(() -> {
+						gcDeletedMessageCache.put(mid, mid);
+						return ok();
+					});
 		});
 	}
 
@@ -103,13 +104,13 @@ public class JavaMessages extends AbstractMessages {
 	}
 
 	@Override
-	public Result<Void> remoteDeleteUserInbox(String name) {
-		Log.info(() -> "remoteDeleteUserInbox : name = %s\n".formatted(name));
+	public Result<Void> remoteDeleteUserInbox(String name, long sid) {
+		Log.info(() -> "remoteDeleteUserInbox : name = %s, sid = %d\n".formatted(name, sid));
 
-		var sqlExpr = "SELECT * FROM InboxEntry e WHERE e.recipient = '%s'".formatted(name);
+		var sqlExpr = "SELECT * FROM InboxEntry e WHERE e.recipient = ?1";
 
 		return DB.transaction(hibernate -> {
-			return hibernate.select(sqlExpr, InboxEntry.class)
+			return hibernate.select(sqlExpr, InboxEntry.class, name)
 					.thenWith((entries) -> {
 						hibernate.deleteMany(entries);
 						for (var e : entries) {

@@ -18,12 +18,15 @@ message GrpcAdminMessage {
 	int64 creationTime = 4;
 	string subject = 5;
 	string contents = 6;
+	int64 sid = 7;
 }
 
 message RemoteDeleteMessageArgs {
 	string mid = 1;
+	int64 sid = 2;
 }
 
 message RemoteDeleteUserInboxArgs {
 	string name = 1;
+	int64 sid = 2;
 }

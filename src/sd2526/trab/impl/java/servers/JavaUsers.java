@@ -77,7 +77,7 @@ public class JavaUsers extends JavaBaseService implements Users, AdminUsers {
 		return fetchUser(name, pwd )
 				.thenWith( (user) -> DB.deleteOne(user))		
 				.async( (user) -> {
-					AdminMessagesClient.get().remoteDeleteUserInbox(name);
+					AdminMessagesClient.get().remoteDeleteUserInbox(name, 0L);
 				});
 	}
 
@@ -88,10 +88,10 @@ public class JavaUsers extends JavaBaseService implements Users, AdminUsers {
 		if (badParams(name, pwd) )
 			return error(BAD_REQUEST);
 
-		var sqlExpr = "SELECT * FROM User u WHERE UPPER(u.name) LIKE '%%%s%%'".formatted(query.toUpperCase());
+		var sqlExpr = "SELECT * FROM User u WHERE UPPER(u.name) LIKE ?1";
 		
 		return fetchUser(name, pwd )
-				.then( () -> DB.select(sqlExpr, User.class))
+				.then( () -> DB.select(sqlExpr, User.class, "%" + query.toUpperCase() + "%"))
 				.mapValue( list -> list.stream().map(User::copyWithoutPassword).toList());
 	}
 
